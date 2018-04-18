@@ -168,20 +168,31 @@ open class JukeboxItem: NSObject {
     }
     
     fileprivate func loadAsync(_ completion: @escaping (_ asset: AVURLAsset) -> ()) {
-        let asset = AVURLAsset(url: URL, options: nil)
-        
-        asset.loadValuesAsynchronously(forKeys: ["duration"], completionHandler: { () -> Void in
-            DispatchQueue.main.async {
-                completion(asset)
+        DispatchQueue.global(qos: .background).async {
+            let asset = AVURLAsset(url: self.URL, options: nil)
+            
+            asset.loadValuesAsynchronously(forKeys: ["duration"], completionHandler: { () -> Void in
+                DispatchQueue.main.async {
+                    completion(asset)
+                }
+            })
+            for item in asset.commonMetadata {
+                item.loadValuesAsynchronously(forKeys: [AVMetadataKeySpace.common.rawValue], completionHandler: { () -> Void in
+                    self.meta.process(metaItem: item)
+                    DispatchQueue.main.async {
+                        self.scheduleNotification()
+                    }
+                })
             }
-        })
+        }
+
     }
     
     fileprivate func configureMetadata()
     {
         
        DispatchQueue.global(qos: .background).async {
-            let metadataArray = AVPlayerItem(url: self.URL).asset.commonMetadata
+            /*let metadataArray = AVPlayerItem(url: self.URL).asset.commonMetadata
             
             for item in metadataArray
             {
@@ -192,6 +203,7 @@ open class JukeboxItem: NSObject {
                     }
                 })
             }
+ */
         }
     }
 }
